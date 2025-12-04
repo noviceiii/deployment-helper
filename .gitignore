@@ -1,0 +1,16 @@
+# Temporary clones and backups created by deployment scripts
+repository/*/tmp/
+repository/*/backup/
+**/backup-*.tar.gz
+
+# local OS files
+.DS_Store
+*.swp
+*.swo
+
+# IDE/editor
+.vscode/
+.idea/
+
+# Logs
+*.log
