@@ -20,8 +20,7 @@ Recommended layout (example):
 /opt/
 └── deployment
     ├── deployment.sh
-    └── repository
-        └── <your-repo>/
+    └── <your-reponame-folder>/
             ├── backup/
             ├── deploy.conf.sh
             └── tmp/
