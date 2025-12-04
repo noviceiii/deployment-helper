@@ -20,10 +20,10 @@ Recommended layout (example):
 /opt/
 └── deployment
     ├── deployment.sh
-    └── <your-reponame-folder>/
-            ├── backup/
-            ├── deploy.conf.sh
-            └── tmp/
+    └── <your-repo>/
+        ├── backup/
+        ├── deploy.conf.sh
+        └── tmp/
 ```
 
 ## Features
@@ -39,20 +39,20 @@ Recommended layout (example):
 - Dry-run (show what would happen):
 ```bash
 cd /opt/deployment
-./deployment.sh --config /opt/deployment/repository/<your-repo>/deploy.conf.sh --dry-run
+./deployment.sh --config /opt/deployment/<your-repo>/deploy.conf.sh --dry-run
 ```
 
 - Real deploy:
 ```bash
-sudo /opt/deployment/deployment.sh --config /opt/deployment/repository/<your-repo>/deploy.conf.sh
+sudo /opt/deployment/deployment.sh --config /opt/deployment/<your-repo>/deploy.conf.sh
 ```
 
 - Rollback (manual): find an appropriate backup in
-`/opt/deployment/repository/<your-repo>/backup/backup-YYYYMMDD-HHMMSS.tar.gz` and restore it:
+`/opt/deployment/<your-repo>/backup/backup-YYYYMMDD-HHMMSS.tar.gz` and restore it:
 ```bash
 sudo systemctl stop <services>          # optional
 sudo rm -rf /path/to/live-dir
-sudo tar -xzf /opt/deployment/repository/<your-repo>/backup/backup-YYYYMMDD-HHMMSS.tar.gz -C /path/to
+sudo tar -xzf /opt/deployment/<your-repo>/backup/backup-YYYYMMDD-HHMMSS.tar.gz -C /path/to
 sudo chown -R <owner>:<group> /path/to/live-dir
 sudo systemctl start <services>
 ```
@@ -60,7 +60,7 @@ sudo systemctl start <services>
 ## Configuration (per-repo)
 
 Each repository gets its own configuration file, typically:
-`/opt/deployment/repository/<your-repo>/deploy.conf.sh`
+`/opt/deployment/<your-repo>/deploy.conf.sh`
 
 An anonymized example:
 ```bash
@@ -69,10 +69,10 @@ An anonymized example:
 REPO_URL="git@github.com:owner/repo.git"
 BRANCH="main"
 DEST_DIR="/var/www/example/live"
-TMP_PARENT="/opt/deployment/repository/example/tmp"
-BACKUP_DIR="/opt/deployment/repository/example/backup"
+TMP_PARENT="/opt/deployment/<your-repo>/tmp"
+BACKUP_DIR="/opt/deployment/<your-repo>/backup"
 KEEP_BACKUPS=5
-EXCLUDES_FILE="/opt/deployment/repository/example/excludes.txt"
+EXCLUDES_FILE="/opt/deployment/<your-repo>/excludes.txt"
 OWNER="www-data"
 GROUP="www-data"
 DIR_MODE="0755"
@@ -110,7 +110,7 @@ tmp/
 ```
 Always test with `--dry-run` first:
 ```bash
-rsync --dry-run --exclude-from=/opt/deployment/repository/<your-repo>/excludes.txt <src>/ <dest>/
+rsync --dry-run --exclude-from=/opt/deployment/<your-repo>/excludes.txt <src>/ <dest>/
 ```
 
 ## Installation (detailed)
@@ -132,16 +132,16 @@ git clone https://github.com/<your-username>/deployment.git /opt/deployment
 
 2) Automated install (recommended):
 ```bash
-# run install script (will copy scripts and create a /opt/deployment/repository/example skeleton)
-sudo /opt/deployment/install.sh --prefix /opt/deployment
+# run install script (will copy scripts and create a /opt/deployment/<your-repo> example skeleton)
+sudo /opt/deployment/install.sh --prefix /opt/deployment --example-repo example
 # dry run:
-sudo /opt/deployment/install.sh --prefix /opt/deployment --dry-run
+sudo /opt/deployment/install.sh --prefix /opt/deployment --example-repo example --dry-run
 ```
 
 What `install.sh` does:
 - Copies `deployment.sh` to `${PREFIX}/deployment.sh` (default `/opt/deployment/deployment.sh`) if present
-- Creates `${PREFIX}/repository/example/` and places a `deploy.conf.sh.example`
-- Creates `tmp/` and `backup/` skeletons under the example repository
+- Creates `${PREFIX}/<example-repo>/` and places a `deploy.conf.sh.example`
+- Creates `tmp/` and `backup/` skeletons under the example repo directory
 
 3) Manual setup (if you prefer):
 ```bash
@@ -149,10 +149,10 @@ sudo cp deployment.sh /opt/deployment/deployment.sh
 sudo cp install.sh /opt/deployment/install.sh
 sudo chmod +x /opt/deployment/deployment.sh /opt/deployment/install.sh
 
-sudo mkdir -p /opt/deployment/repository/<your-repo>/{tmp,backup}
-sudo cp deploy.conf.sh.example /opt/deployment/repository/<your-repo>/deploy.conf.sh
+sudo mkdir -p /opt/deployment/<your-repo>/{tmp,backup}
+sudo cp deploy.conf.sh.example /opt/deployment/<your-repo>/deploy.conf.sh
 # Edit the config:
-sudo nano /opt/deployment/repository/<your-repo>/deploy.conf.sh
+sudo nano /opt/deployment/<your-repo>/deploy.conf.sh
 ```
 
 4) Create and register an SSH deploy key (recommended)
@@ -165,13 +165,13 @@ ssh-keygen -t ed25519 -f ~/.ssh/deploy_key -C "deploy@yourhost" -N ""
 
 5) Test with a dry-run:
 ```bash
-/opt/deployment/deployment.sh --config /opt/deployment/repository/<your-repo>/deploy.conf.sh --dry-run
+/opt/deployment/deployment.sh --config /opt/deployment/<your-repo>/deploy.conf.sh --dry-run
 ```
 
 6) Set up Cron or CI (optional)
 - Example Cron (run as root or a deploy user):
 ```cron
-0 4 * * 0 root /opt/deployment/deployment.sh --config /opt/deployment/repository/<your-repo>/deploy.conf.sh >> /opt/deployment/repository/<your-repo>/deploy.log 2>&1
+0 4 * * 0 root /opt/deployment/deployment.sh --config /opt/deployment/<your-repo>/deploy.conf.sh >> /opt/deployment/<your-repo>/deploy.log 2>&1
 ```
 Prefer CI to push artifacts to production hosts where possible.
 
