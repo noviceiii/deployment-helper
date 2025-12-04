@@ -1,0 +1,13 @@
+# production-specific
+config.php
+secrets.json
+database.sqlite
+
+# runtime / logs
+log/
+tmp/
+.cache/
+
+# editor / local files
+.vscode/
+.env
