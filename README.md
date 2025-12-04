@@ -1,14 +1,14 @@
 # Deployment helper — README
 
-Diese README beschreibt die eingesetzte Deployment‑Struktur und zeigt, wie du das rsync‑basierte Deployment sicher benutzt.  
-Du hast dich für folgende Ordnerstruktur entschieden:
+Diese README beschreibt die eingesetzte Deployment‑Struktur und zeigt, wie du das rsync‑basierte Deployment sicher benutzt.
 
+Projektstruktur (Beispiel)
 /opt/
 |
 └── deployment
     ├── deployment.sh
     └── repository
-        └── <repo-name>/
+        └── <your-repo>/
             ├── backup/
             ├── deploy.conf.sh
             └── tmp/
@@ -23,13 +23,12 @@ Ziele dieses Setups
 Inhalt
 - Konzept / Ablauf
 - Verzeichnisstruktur & Beispiele
-- deploy.conf.sh — wichtigste Variablen
+- deploy.conf.sh — wichtigste Variablen (anonymisiert)
 - Excludes / Was niemals überschrieben werden sollte
 - Beispiele: Dry‑run, Deploy, Rollback
 - Cron / Automatisierung
 - Hinweise zur Berechtigungsverwaltung
-
----
+- Installation (kurzanleitung für dieses Repo)
 
 Konzept / Ablauf
 1. Clone (shallow) des Repo in ein temporäres Verzeichnis `/opt/deployment/repository/<repo>/tmp/<random>`.
@@ -39,26 +38,19 @@ Konzept / Ablauf
 5. Backup‑Rotation: nur die letzten N Backups behalten.
 6. Cleanup temporäre Daten.
 
-Verzeichnisstruktur (Beispiel)
-- /opt/deployment/deployment.sh
-- /opt/deployment/repository/adventor/
-  - backup/                 # tar.gz Backups, rotierbar
-  - deploy.conf.sh          # repo‑spezifische config für deployment.sh
-  - tmp/                    # temporäre Klone (deployment.sh erzeugt/drops)
-
-deploy.conf.sh — wichtigste Variablen
-(Lege diese Datei in `/opt/deployment/repository/<repo>/deploy.conf.sh` an)
+deploy.conf.sh — wichtigste Variablen (anonymisiert)
+Lege diese Datei in `/opt/deployment/repository/<your-repo>/deploy.conf.sh` an oder nutze die Beispiel‑datei aus diesem Repository.
 
 - REPO_URL
-  - Git‑URL (SSH empfohlen), z. B. `git@github.com:noviceiii/adventor.git`
+  - Git‑URL (SSH empfohlen), z. B. `git@github.com:<owner>/<repo>.git`
 - BRANCH
   - Branch to deploy (z. B. `main`)
 - DEST_DIR
-  - Deployment destination (live path), z. B. `/var/www/www.t9t.ch/adventor` oder `/opt/adventor/live`
+  - Deployment destination (live path), z. B. `/var/www/example/live`
 - TMP_PARENT
-  - Parent for temp clones, e.g. `/opt/deployment/repository/adventor/tmp`
+  - Parent for temp clones, e.g. `/opt/deployment/repository/<your-repo>/tmp`
 - BACKUP_DIR
-  - Where backups are stored, e.g. `/opt/deployment/repository/adventor/backup`
+  - Where backups are stored, e.g. `/opt/deployment/repository/<your-repo>/backup`
 - KEEP_BACKUPS
   - Number of backups to keep (rotation)
 - EXCLUDES_FILE
@@ -68,31 +60,17 @@ deploy.conf.sh — wichtigste Variablen
 - DIR_MODE, FILE_MODE
   - Default permission modes (e.g. `0755`, `0644`)
 - SPECIAL_MODES
-  - Optional array of `"relative/path:owner:group:mode"` entries (e.g. `subscribers.db:www-data:www-data:0660`)
+  - Optional array of `"relative/path:owner:group:mode"` entries
 
-Beispiel (minimal)
-```bash
-REPO_URL="git@github.com:noviceiii/adventor.git"
-BRANCH="main"
-DEST_DIR="/opt/adventor/live"
-TMP_PARENT="/opt/deployment/repository/adventor/tmp"
-BACKUP_DIR="/opt/deployment/repository/adventor/backup"
-KEEP_BACKUPS=5
-EXCLUDES_FILE="/opt/deployment/repository/adventor/excludes.txt"
-OWNER="www-data"
-GROUP="www-data"
-DIR_MODE="0755"
-FILE_MODE="0644"
-SPECIAL_MODES=( "subscribers.db:www-data:www-data:0660" "config.php:www-data:www-data:0640" )
-```
+Anonymisiertes Beispiel (voll dokumentiert) findest du in deploy.conf.sh.example in diesem Repo.
 
 Excludes (empfohlen)
 Die Datei `excludes.txt` enthält rsync‑Muster, die nicht überschrieben werden dürfen. Beispiele:
 ```
 # production specific
 config.php
-subscribers.db
-daily_preview.html
+secrets.json
+database.sqlite
 
 # runtime/logs
 log/
@@ -110,67 +88,66 @@ Beispiele: Dry‑run / Deploy / Rollback
 - Dry run (zeigt, was passieren würde):
 ```bash
 cd /opt/deployment
-./deployment.sh --config /opt/deployment/repository/adventor/deploy.conf.sh --dry-run
+./deployment.sh --config /opt/deployment/repository/<your-repo>/deploy.conf.sh --dry-run
 ```
 - Real deploy:
 ```bash
-sudo /opt/deployment/deployment.sh --config /opt/deployment/repository/adventor/deploy.conf.sh
+sudo /opt/deployment/deployment.sh --config /opt/deployment/repository/<your-repo>/deploy.conf.sh
 ```
-(Erfordert, dass die Maschine per SSH auf das Repo zugreifen kann oder du git‑archive‑artefakte nutzt)
 
 - Rollback (manuell): finde das gewünschte Backup in
-  `/opt/deployment/repository/adventor/backup/backup-YYYYMMDD-HHMMSS.tar.gz` und entpacke es zurück:
+  `/opt/deployment/repository/<your-repo>/backup/backup-YYYYMMDD-HHMMSS.tar.gz` und entpacke es zurück:
 ```bash
-sudo systemctl stop nginx php-fpm   # optional to avoid in-flight requests
-sudo rm -rf /var/www/www.t9t.ch/adventor
-sudo tar -xzf /opt/deployment/repository/adventor/backup/backup-YYYYmmdd-HHMMSS.tar.gz -C /var/www/www.t9t.ch
-sudo chown -R www-data:www-data /var/www/www.t9t.ch/adventor
-sudo systemctl start php-fpm nginx
+sudo systemctl stop <services>   # optional
+sudo rm -rf /path/to/live-dir
+sudo tar -xzf /opt/deployment/repository/<your-repo>/backup/backup-YYYYMMDD-HHMMSS.tar.gz -C /path/to
+sudo chown -R <owner>:<group> /path/to/live-dir
+sudo systemctl start <services>
 ```
 
 Cron / Automatisierung
 - Du kannst deployments per Cron oder CI auslösen. Beispiel Cron (run as root or deploy user):
 ```cron
 # weekly automatic deploy (example)
-0 4 * * 0 root /opt/deployment/deployment.sh --config /opt/deployment/repository/adventor/deploy.conf.sh >> /opt/deployment/repository/adventor/deploy.log 2>&1
+0 4 * * 0 root /opt/deployment/deployment.sh --config /opt/deployment/repository/<your-repo>/deploy.conf.sh >> /opt/deployment/repository/<your-repo>/deploy.log 2>&1
 ```
-- Achtung: automatische Deploys sollten nur in geprüften Szenarien laufen. Für kontrollierte Deploys empfehle ich CI/CD (GitHub Actions) die Artefakte baut und auf Production pusht.
+- Achtung: automatische Deploys sollten nur in geprüften Szenarien laufen.
 
 Sicherheit & Zugriffsrechte
-- Git clone via SSH: Erzeuge einen deploy key (ed25519) und registriere public key als Deploy key in GitHub (repo scope read only).
-- Stelle sicher, dass `deployment.sh` auf einem Host mit sicheren SSH‑Schlüsseln ausgeführt wird.
-- `deployment.sh` wird in der Regel als root oder deploy user ausgeführt; sie setzt am Ende `chown` auf die gewünschte `OWNER:GROUP`.
-- Halte Secrets (Passwörter, private keys) niemals in `deploy.conf.sh` oder im Repo.
+- Git clone via SSH: Erzeuge einen deploy key (ed25519) und registriere public key als Deploy key in GitHub (nur read‑access).
+- Halte Secrets niemals in `deploy.conf.sh` oder im Repo.
 
-Post‑deploy hooks (optional)
-- Du kannst nach dem rsync zusätzliche Schritte ausführen, z. B. Composer install, asset build, service reload. Füge diese in `deployment.sh` oder per `post_deploy.sh` Hook ein (wenn du Hooks unterstützen willst).
-- Beispiel (in deploy.conf.sh):
+Installation (kurz)
+1. Clone dieses Repository oder kopiere die Dateien nach /opt/deployment:
 ```bash
-POST_DEPLOY_CMDS=( "cd /opt/adventor/live && composer install --no-dev" "systemctl reload php8.3-fpm" )
+# als root oder mit sudo
+sudo mkdir -p /opt/deployment
+sudo chown $(whoami) /opt/deployment
+git clone https://github.com/<your-username>/deployment.git /opt/deployment
 ```
-und `deployment.sh` kann diese nach dem rsync ausführen.
-
-Praktische Hinweise / Checklist
-- Teste zuerst mit `--dry-run`.
-- Erstelle initial die Verzeichnisse und lege `excludes.txt` an:
+oder alternativ:
 ```bash
-sudo mkdir -p /opt/deployment/repository/adventor/{tmp,backup}
-sudo chown -R walther:walther /opt/deployment/repository/adventor
-# create excludes file and deploy.conf.sh as described above
+# kopiere nur die relevanten Dateien
+sudo cp deployment.sh /opt/deployment/
+sudo cp install.sh /opt/deployment/
 ```
-- Verifiziere, dass die Maschine GitHub per SSH erreichen kann:
+
+2. Beispiel‑install (empfohlen): benutze das mitgelieferte install.sh, um Skeletons und Beispiel‑config zu erzeugen:
 ```bash
-sudo -u walther ssh -T git@github.com
+sudo /opt/deployment/install.sh --prefix /opt/deployment
+# oder in DRY RUN mode:
+# /opt/deployment/install.sh --prefix /opt/deployment --dry-run
 ```
-- Prüfe die Backups nach dem ersten echten Deploy.
 
-FAQ — häufige Probleme
-- "Permission denied" beim Redirect `>> /path/log`: Die Shell‑Redirection wird vom aufrufenden User (z. B. walther) gemacht. Verwende `sudo -u www-data sh -c 'cmd >> /path/log'` oder führe Cron direkt als `www-data`.
-- "dubious ownership" / Git meckert: Stelle sicher, dass der Benutzer, der `git clone` ausführt, Owner des TMP‑Verzeichnisses ist oder setze `git config --global --add safe.directory <dir>` für diesen User.
-- Wenn Production keinen direkten Git‑Zugriff hat: nutze `git archive` in CI oder create a tarball on the build host and rsync it to /opt.
+3. Lege für jedes Projekt ein Repo‑Verzeichnis an und passe die Beispiel‑config an:
+```bash
+sudo mkdir -p /opt/deployment/repository/<your-repo>/{tmp,backup}
+sudo cp /opt/deployment/repository/example/deploy.conf.sh.example /opt/deployment/repository/<your-repo>/deploy.conf.sh
+# editieren:
+sudo nano /opt/deployment/repository/<your-repo>/deploy.conf.sh
+```
 
-Wenn du willst, kann ich nächste Schritte liefern:
-- Ein konkretes `excludes.txt` für adventor (ich kann es direkt erzeugen).
-- Ein Beispiel `post_deploy.sh` Hook, das composer/npm ausführt (falls benötigt).
-- Anleitung, wie du einen Deploy‑Key erstellst und in GitHub einträgst.
-# deployment
+4. Teste zunächst mit --dry-run.
+
+Weitere Hilfe
+- Wenn du willst, anonymisiere ich zusätzlich die README‑Abschnitte oder erzeuge eine vollständige deploy.conf.sh.example basierend auf deinem Projekt‑Layout.
