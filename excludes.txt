@@ -11,3 +11,4 @@ tmp/
 # editor / local files
 .vscode/
 .env
+.DS_Store
