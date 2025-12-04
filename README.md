@@ -15,6 +15,8 @@ The helper implements a simple, reproducible workflow:
 5. Keep only the last N backups (rotation).
 6. Clean up temporary data.
 
+Git(hub) -> Deplyoment TMP -> Target director : Set Permissions & User.
+
 Recommended layout (example):
 ```
 /opt/
