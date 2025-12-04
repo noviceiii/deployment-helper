@@ -5,12 +5,14 @@ set -euo pipefail
 PREFIX="/opt/deployment"
 SRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DRY_RUN=0
+EXAMPLE_REPO="example"
 
 usage() {
   cat <<USAGE
-Usage: install.sh [--prefix DIR] [--dry-run] [--help]
-  --prefix DIR    Install prefix (default: /opt/deployment)
-  --dry-run       Show what would be done, do not modify system
+Usage: install.sh [--prefix DIR] [--example-repo NAME] [--dry-run] [--help]
+  --prefix DIR        Install prefix (default: /opt/deployment)
+  --example-repo NAME Name of example repo directory to create (default: example)
+  --dry-run           Show what would be done, do not modify system
 USAGE
   exit 1
 }
@@ -18,6 +20,7 @@ USAGE
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --prefix) PREFIX="$2"; shift 2;;
+    --example-repo) EXAMPLE_REPO="$2"; shift 2;;
     --dry-run) DRY_RUN=1; shift;;
     -h|--help) usage;;
     *) echo "Unknown arg: $1"; usage;;
@@ -38,7 +41,7 @@ install_file() {
   fi
 }
 
-info "Installing to prefix: $PREFIX"
+info "Installing to prefix: $PREFIX (example repo: ${EXAMPLE_REPO})"
 if [[ $DRY_RUN -eq 1 ]]; then
   info "DRY RUN mode enabled"
 fi
@@ -50,25 +53,25 @@ else
   info "Note: deployment.sh not found in source dir; please copy it manually if needed."
 fi
 
-# Copy example config into repository/example/ so users can adapt it.
-EXAMPLE_REPO_DIR="${PREFIX}/repository/example"
+# Prepare example repo dir under PREFIX/<example-repo>
+EXAMPLE_DIR="${PREFIX}/${EXAMPLE_REPO}"
 if [[ $DRY_RUN -eq 1 ]]; then
-  info "DRY RUN: mkdir -p ${EXAMPLE_REPO_DIR}"
+  info "DRY RUN: mkdir -p ${EXAMPLE_DIR}"
 else
-  mkdir -p "${EXAMPLE_REPO_DIR}"
+  mkdir -p "${EXAMPLE_DIR}"
 fi
 
 if [[ -f "${SRC_DIR}/deploy.conf.sh" ]]; then
-  install_file "${SRC_DIR}/deploy.conf.sh" "${EXAMPLE_REPO_DIR}/deploy.conf.sh.example"
+  install_file "${SRC_DIR}/deploy.conf.sh" "${EXAMPLE_DIR}/deploy.conf.sh.example"
 fi
 
 # Create tmp/ and backup/ skeletons for convenience
 for d in tmp backup; do
   if [[ $DRY_RUN -eq 1 ]]; then
-    info "DRY RUN: mkdir -p ${EXAMPLE_REPO_DIR}/${d}"
+    info "DRY RUN: mkdir -p ${EXAMPLE_DIR}/${d}"
   else
-    mkdir -p "${EXAMPLE_REPO_DIR}/${d}"
+    mkdir -p "${EXAMPLE_DIR}/${d}"
   fi
 done
 
-info "Install complete. Edit ${EXAMPLE_REPO_DIR}/deploy.conf.sh.example and create your repo dir under ${PREFIX}/repository/<your-repo>."
+info "Install complete. Edit ${EXAMPLE_DIR}/deploy.conf.sh.example and create your repo dir under ${PREFIX}/<your-repo>."
