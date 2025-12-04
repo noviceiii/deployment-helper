@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+#
+# deploy.conf.sh - Example configuration for deployment.sh for a project.
+# Edit values if needed. This file is sourced by deployment.sh and must not contain secrets.
+#
+# All variables are documented in deployment/deployment.sh and override its defaults.
+#
+
+# Git repository URL (SSH recommended, must be accessible from the machine doing the clone)
+# Example:
+# REPO_URL="git@github.com:noviceiii/adventor.git"
+REPO_URL=""
+
+# Branch to deploy
+BRANCH="main"
+
+# Destination directory (live production path). Adjust for your site.
+DEST_DIR="/var/www/www.t9t.ch/<your-repo>"
+
+# Parent directory used for temporary clones (must be writable by the deploy user)
+TMP_PARENT="/opt/deployment/<your-repo>/tmp"
+
+# Where backups will be stored
+BACKUP_DIR="/opt/deployment/<your-repo>/backup"
+
+# Number of backups to keep (older backups are pruned)
+KEEP_BACKUPS=5
+
+# Optional rsync excludes file (relative to repo root or absolute path)
+EXCLUDES_FILE="/opt/deployment/<your-repo>/excludes.txt"
+
+# File/Directory ownership to set on deployed files
+OWNER="www-data"
+GROUP="www-data"
+
+# Default permissions for directories and files
+DIR_MODE="0755"
+FILE_MODE="0644"
+
+# Special modes to apply to specific files after deploy.
+# Format: "relative/path:owner:group:mode"
+SPECIAL_MODES=(
+  # "subscribers.db:www-data:www-data:0660"
+  # "config.php:www-data:www-data:0640"
+)
+
+# Git clone depth (1 = shallow)
+GIT_DEPTH=1
+
+# Dry run default (0 = real deploy, 1 = dry run)
+DRY_RUN=0
